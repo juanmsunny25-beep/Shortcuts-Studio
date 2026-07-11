@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07111f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Shortcuts Studio" />
+    <title>Shortcuts Studio</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Shortcuts Studio</p>
+          <h1>Create automations that feel like a polished iPhone Shortcuts experience.</h1>
+          <p>Build, run, and refine little routines from one calm workspace.</p>
+        </div>
+        <div class="hero-actions">
+          <div class="hero-stat">
+            <strong id="shortcutCount">0</strong>
+            <span>automations</span>
+          </div>
+          <button id="installButton" class="secondary-button hidden">Install app</button>
+          <button id="themeToggle" class="pill-button">🌙 Dark</button>
+        </div>
+      </header>
+
+      <section class="controls">
+        <label class="search-box" for="searchInput">
+          <span>🔎</span>
+          <input id="searchInput" placeholder="Search shortcuts..." />
+        </label>
+        <div class="utility-row">
+          <button id="exportBtn" class="secondary-button">Export</button>
+          <label for="importInput" class="secondary-button file-label">Import</label>
+          <input id="importInput" type="file" accept="application/json" hidden />
+        </div>
+        <div id="categoryChips" class="chip-row"></div>
+      </section>
+
+      <section class="workspace">
+        <div class="shortcut-column">
+          <div class="section-head">
+            <h2>My shortcuts</h2>
+            <button id="newShortcutBtn" class="secondary-button">+ New automation</button>
+          </div>
+          <div id="shortcutGrid" class="shortcut-grid"></div>
+        </div>
+
+        <aside class="builder-panel">
+          <div class="panel-card">
+            <div class="section-head compact">
+              <h3>Create automation</h3>
+              <button id="clearBuilderBtn" class="ghost-button">Clear</button>
+            </div>
+
+            <div class="field-group">
+              <label for="shortcutTitle">Name</label>
+              <input id="shortcutTitle" placeholder="Morning startup" />
+            </div>
+
+            <div class="field-group">
+              <label for="shortcutDescription">Description</label>
+              <textarea id="shortcutDescription" rows="3" placeholder="What should this automation do?"></textarea>
+            </div>
+
+            <div class="field-group">
+              <label for="shortcutCategory">Category</label>
+              <select id="shortcutCategory">
+                <option value="Daily">Daily</option>
+                <option value="Work">Work</option>
+                <option value="Focus">Focus</option>
+                <option value="System">System</option>
+              </select>
+            </div>
+
+            <div class="field-group">
+              <label for="shortcutIcon">Icon</label>
+              <select id="shortcutIcon">
+                <option value="⚡">⚡ Lightning</option>
+                <option value="📍">📍 Location</option>
+                <option value="🎵">🎵 Music</option>
+                <option value="📧">📧 Mail</option>
+                <option value="🗓️">🗓️ Calendar</option>
+                <option value="🔗">🔗 Link</option>
+                <option value="🛜">🛜 Network</option>
+                <option value="🗺️">🗺️ Maps</option>
+                <option value="🎮">🎮 Games</option>
+                <option value="🔐">🔐 Security</option>
+              </select>
+            </div>
+
+            <div id="builderSteps" class="builder-steps"></div>
+
+            <div class="builder-actions">
+              <button id="addStepBtn" class="secondary-button">+ Add action</button>
+              <button id="saveShortcutBtn" class="pill-button">Save shortcut</button>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <h3>Run log</h3>
+            <ul id="logList" class="log-list"></ul>
+          </div>
+        </aside>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
