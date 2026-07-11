@@ -387,6 +387,16 @@ textarea {
   color: var(--text);
 }
 
+.step-condition,
+.step-device {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
 .builder-actions {
   display: flex;
   justify-content: space-between;
