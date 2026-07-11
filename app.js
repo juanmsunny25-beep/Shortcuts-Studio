@@ -76,6 +76,12 @@ let logEntries = [];
 let editingId = null;
 let draggedStepIndex = null;
 let deferredPrompt = null;
+let discoveredBluetooth = [];
+let mockWifiNetworks = [
+  { name: 'Home WiFi', strength: '🔒' },
+  { name: 'Guest Network', strength: '📶' },
+  { name: 'Neighbor WiFi', strength: '📴' }
+];
 
 const shortcutGrid = document.getElementById('shortcutGrid');
 const categoryChips = document.getElementById('categoryChips');
@@ -202,6 +208,45 @@ function showToast(message) {
   showToast.timeout = window.setTimeout(() => toast.classList.remove('show'), 1800);
 }
 
+async function scanBluetooth() {
+  if (!navigator.bluetooth) {
+    showToast('Bluetooth scanning not available on this device');
+    return;
+  }
+
+  try {
+    showToast('Scanning for Bluetooth devices...');
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: ['generic_access']
+    });
+    
+    if (!discoveredBluetooth.some((d) => d.id === device.id)) {
+      discoveredBluetooth.push({
+        id: device.id,
+        name: device.name || 'Unknown Device',
+        connected: device.gatt?.connected || false
+      });
+    }
+    
+    showToast(`Found: ${device.name || 'Unknown Device'}`);
+  } catch (error) {
+    showToast('Bluetooth scan cancelled or unavailable');
+  }
+}
+
+function getBluetoothOptions() {
+  return discoveredBluetooth.length > 0
+    ? discoveredBluetooth.map((device) => `<option value="${device.name}">${device.name}</option>`).join('')
+    : '<option value="headphones">Headphones</option><option value="speaker">Speaker</option><option value="watch">Smartwatch</option>';
+}
+
+function getWifiOptions() {
+  return mockWifiNetworks
+    .map((network) => `<option value="${network.name}">${network.strength} ${network.name}</option>`)
+    .join('');
+}
+
 function renderChips() {
   const categories = ['All', ...new Set(shortcuts.map((shortcut) => shortcut.category))];
   categoryChips.innerHTML = categories
@@ -294,9 +339,27 @@ function renderBuilder() {
             <option value="toggle_theme" ${step.type === 'toggle_theme' ? 'selected' : ''}>Toggle theme</option>
           </select>
           <div class="step-input-wrap">
-            ${step.type === 'toggle_wifi' || step.type === 'toggle_bluetooth'
+            ${step.type === 'toggle_bluetooth'
               ? `
-                <div class="toggle-pill" data-index="${index}">
+                <div style="display: flex; gap: 8px; flex: 1;">
+                  <select data-index="${index}" class="step-device" style="flex: 1;">
+                    ${getBluetoothOptions()}
+                  </select>
+                  <button class="secondary-button" data-index="${index}" data-action="scan-bt" style="flex: 0; padding: 10px 12px; white-space: nowrap;">Scan</button>
+                </div>
+                <div class="toggle-pill" data-index="${index}" style="margin-top: 8px;">
+                  <button class="toggle-option ${step.value === 'off' ? 'inactive' : 'active'}" data-value="on" data-index="${index}">On</button>
+                  <button class="toggle-option ${step.value === 'on' || !step.value ? 'active' : 'inactive'}" data-value="off" data-index="${index}">Off</button>
+                </div>
+              `
+              : step.type === 'toggle_wifi'
+              ? `
+                <div style="display: flex; gap: 8px; flex: 1;">
+                  <select data-index="${index}" class="step-device" style="flex: 1;">
+                    ${getWifiOptions()}
+                  </select>
+                </div>
+                <div class="toggle-pill" data-index="${index}" style="margin-top: 8px;">
                   <button class="toggle-option ${step.value === 'off' ? 'inactive' : 'active'}" data-value="on" data-index="${index}">On</button>
                   <button class="toggle-option ${step.value === 'on' || !step.value ? 'active' : 'inactive'}" data-value="off" data-index="${index}">Off</button>
                 </div>
@@ -317,10 +380,19 @@ function renderBuilder() {
     row.addEventListener('dragend', handleStepDragEnd);
   });
 
-  builderSteps.querySelectorAll('.step-type, .step-value, .step-remove, .toggle-option').forEach((element) => {
+  builderSteps.querySelectorAll('.step-type, .step-value, .step-remove, .toggle-option, .step-device').forEach((element) => {
     element.addEventListener('change', handleBuilderChange);
     element.addEventListener('input', handleBuilderChange);
     element.addEventListener('click', handleBuilderChange);
+  });
+
+  builderSteps.querySelectorAll('[data-action="scan-bt"]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const index = Number(button.dataset.index);
+      scanBluetooth().then(() => {
+        renderBuilder();
+      });
+    });
   });
 }
 
@@ -339,6 +411,11 @@ function handleBuilderChange(event) {
       builderState.steps.push({ type: 'open_url', value: 'https://example.com' });
     }
     renderBuilder();
+    return;
+  }
+
+  if (event.target.classList.contains('step-device')) {
+    builderState.steps[index].device = event.target.value;
     return;
   }
 
@@ -480,12 +557,14 @@ async function runShortcut(shortcut) {
         break;
       case 'toggle_bluetooth': {
         const stateText = step.value && step.value.toLowerCase() === 'off' ? 'off' : 'on';
-        log(`Bluetooth ${stateText}`);
+        const device = step.device || 'Bluetooth';
+        log(`${device}: turned ${stateText}`);
         break;
       }
       case 'toggle_wifi': {
         const stateText = step.value && step.value.toLowerCase() === 'off' ? 'off' : 'on';
-        log(`Wi-Fi ${stateText}`);
+        const network = step.device || 'Wi-Fi';
+        log(`${network}: turned ${stateText}`);
         break;
       }
       case 'copy_text':
