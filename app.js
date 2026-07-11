@@ -78,9 +78,22 @@ let draggedStepIndex = null;
 let deferredPrompt = null;
 let discoveredBluetooth = [];
 let mockWifiNetworks = [
-  { name: 'Home WiFi', strength: '🔒' },
-  { name: 'Guest Network', strength: '📶' },
-  { name: 'Neighbor WiFi', strength: '📴' }
+  { name: 'Home WiFi', strength: '�📶📶' },
+  { name: 'Work Network', strength: '📶📶' },
+  { name: 'Coffee Shop', strength: '📶' },
+  { name: 'Library WiFi', strength: '📶📶📶' },
+  { name: 'Guest Network', strength: '📶' }
+];
+
+const WIFI_CONDITIONS = [
+  { value: 'connect', label: 'When I connect to' },
+  { value: 'disconnect', label: 'When I disconnect from' },
+  { value: 'leave', label: 'When I leave' }
+];
+
+const BLUETOOTH_CONDITIONS = [
+  { value: 'connect', label: 'When I connect to' },
+  { value: 'disconnect', label: 'When I disconnect from' }
 ];
 
 const shortcutGrid = document.getElementById('shortcutGrid');
@@ -354,14 +367,20 @@ function renderBuilder() {
               `
               : step.type === 'toggle_wifi'
               ? `
-                <div style="display: flex; gap: 8px; flex: 1;">
-                  <select data-index="${index}" class="step-device" style="flex: 1;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; gap: 8px;">
+                    <select data-index="${index}" class="step-condition" style="flex: 1;" title="Select trigger">
+                      ${WIFI_CONDITIONS.map((cond) => `<option value="${cond.value}" ${step.condition === cond.value ? 'selected' : ''}>${cond.label}</option>`).join('')}
+                    </select>
+                  </div>
+                  <select data-index="${index}" class="step-device" style="width: 100%;">
+                    <option value="">-- Select network --</option>
                     ${getWifiOptions()}
                   </select>
-                </div>
-                <div class="toggle-pill" data-index="${index}" style="margin-top: 8px;">
-                  <button class="toggle-option ${step.value === 'off' ? 'inactive' : 'active'}" data-value="on" data-index="${index}">On</button>
-                  <button class="toggle-option ${step.value === 'on' || !step.value ? 'active' : 'inactive'}" data-value="off" data-index="${index}">Off</button>
+                  <div class="toggle-pill">
+                    <button class="toggle-option ${step.value === 'off' ? 'inactive' : 'active'}" data-value="on" data-index="${index}">Turn On</button>
+                    <button class="toggle-option ${step.value === 'on' || !step.value ? 'active' : 'inactive'}" data-value="off" data-index="${index}">Turn Off</button>
+                  </div>
                 </div>
               `
               : `<input data-index="${index}" class="step-value" value="${escapeHtml(step.value)}" placeholder="${step.type === 'open_app' ? APP_OPTIONS.map((app) => app.label).join(', ') : 'Add a value'}" />`
@@ -380,7 +399,7 @@ function renderBuilder() {
     row.addEventListener('dragend', handleStepDragEnd);
   });
 
-  builderSteps.querySelectorAll('.step-type, .step-value, .step-remove, .toggle-option, .step-device').forEach((element) => {
+  builderSteps.querySelectorAll('.step-type, .step-value, .step-remove, .toggle-option, .step-device, .step-condition').forEach((element) => {
     element.addEventListener('change', handleBuilderChange);
     element.addEventListener('input', handleBuilderChange);
     element.addEventListener('click', handleBuilderChange);
@@ -419,6 +438,11 @@ function handleBuilderChange(event) {
     return;
   }
 
+  if (event.target.classList.contains('step-condition')) {
+    builderState.steps[index].condition = event.target.value;
+    return;
+  }
+
   if (event.target.classList.contains('step-type')) {
     builderState.steps[index].type = event.target.value;
     if (event.target.value === 'toggle_theme') {
@@ -427,6 +451,7 @@ function handleBuilderChange(event) {
       builderState.steps[index].value = 'spotify';
     } else if (event.target.value === 'toggle_bluetooth' || event.target.value === 'toggle_wifi') {
       builderState.steps[index].value = 'on';
+      builderState.steps[index].condition = 'connect';
     }
     renderBuilder();
     return;
@@ -564,7 +589,8 @@ async function runShortcut(shortcut) {
       case 'toggle_wifi': {
         const stateText = step.value && step.value.toLowerCase() === 'off' ? 'off' : 'on';
         const network = step.device || 'Wi-Fi';
-        log(`${network}: turned ${stateText}`);
+        const condition = WIFI_CONDITIONS.find((c) => c.value === step.condition)?.label || 'Wi-Fi action';
+        log(`${condition} ${network}: turn ${stateText}`);
         break;
       }
       case 'copy_text':
